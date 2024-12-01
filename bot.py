@@ -8,6 +8,7 @@ prefix = config.PREFIX
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.voice_states = True
 bot = commands.Bot(command_prefix=prefix, intents=intents)
 
 async def load_cogs():
@@ -25,17 +26,17 @@ async def load_cogs():
 async def on_ready():
     print(f'Logged in as {bot.user.name}')
     await bot.change_presence(activity=discord.Game(f"prefix : {prefix}"))
+    await load_cogs()
     try:
-        synced = await bot.tree.sync()
+        synced = await bot.tree.sync()  
         print(f"Synced {len(synced)} commands")
     except Exception as e:
         print(f"Failed to sync commands: {e}")
-    await load_cogs()
 
 @bot.event
 async def on_message(message):
     if message.author.bot:
-        return  
+        return
     if message.content.startswith(bot.command_prefix):
         await bot.process_commands(message)
 
