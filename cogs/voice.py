@@ -12,26 +12,25 @@ class Voice(commands.Cog):
     async def join_vc(self, ctx):
         if not ctx.author.voice:
             await ctx.send("先にボイスチャンネルに接続してください。", ephemeral=True)
-            return None  
+            return None
         channel = ctx.author.voice.channel
         return await channel.connect()
 
     async def play_next(self, ctx, vc):
         if not self.queue:
-            await ctx.send("再生する曲がありません。", ephemeral=True)
             self.is_playing = False
             return
 
-        self.current_song = self.queue.pop(0)  
+        self.current_song = self.queue.pop(0)
         ydl_opts = {
             'format': 'bestaudio/best',
             'noplaylist': True,
             'quiet': True,
-            'extractaudio': True,  
-            'audioquality': 1,  
-            'outtmpl': 'downloads/%(id)s.%(ext)s', 
+            'extractaudio': True,
+            'audioquality': 1,
+            'outtmpl': 'downloads/%(id)s.%(ext)s',
         }
-        
+
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             try:
                 info = ydl.extract_info(self.current_song, download=False)
@@ -47,7 +46,7 @@ class Voice(commands.Cog):
         if not ctx.voice_client:
             vc = await self.join_vc(ctx)
             if vc is None:
-                return  
+                return
         else:
             vc = ctx.voice_client
 
@@ -91,5 +90,8 @@ class Voice(commands.Cog):
             queue_list = "\n".join(self.queue)
             await ctx.send(f"現在のキュー:\n{queue_list}", ephemeral=True)
 
+        if not self.queue:
+            await ctx.send("再生する曲がありません。", ephemeral=True)
+
 async def setup(bot):
-    await bot.add_cog(Voice(bot))  
+    await bot.add_cog(Voice(bot))
