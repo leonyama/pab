@@ -10,7 +10,7 @@ class OwnerCommands(commands.Cog):
         self.bot = bot
 
     def is_owner(self, user_id):
-        return user_id in config.OWNER_IDS
+        return str(user_id) in map(str, config.OWNER_IDS)  
 
     @commands.command(name="kick")
     async def kick(self, ctx, member: discord.Member, *, reason=None):
