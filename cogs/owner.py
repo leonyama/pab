@@ -4,13 +4,14 @@ from discord import app_commands
 import config
 import os
 import sys
+import json
 
 class OwnerCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     def is_owner(self, user_id):
-        return str(user_id) in map(str, config.OWNER_IDS)  
+        return str(user_id) in map(str, json.loads(config.OWNER_IDS))
 
     @commands.command(name="kick")
     async def kick(self, ctx, member: discord.Member, *, reason=None):

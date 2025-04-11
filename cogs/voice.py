@@ -311,7 +311,7 @@ class VoiceCommands(commands.Cog):
             self.music_player.now_playing[interaction.guild.id] = None
         await interaction.followup.send("ボイスチャンネルから退出しました", ephemeral=True)
 
-    @app_commands.command(name="music", description="音楽を再生します")
+    @app_commands.command(name="play", description="音楽を再生します")
     async def music_slash(self, interaction: discord.Interaction, query: str):
         if not interaction.user.voice:
             await interaction.response.send_message("ボイスチャンネルに接続してください", ephemeral=True)

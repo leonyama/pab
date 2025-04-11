@@ -32,6 +32,7 @@ class HitAndBlow(commands.Cog):
 
     @commands.command(name="hb")
     async def start_game(self, ctx):
+        """Hit & Blowを開始します"""
         if ctx.author.id in self.games:
             await ctx.send(f"{ctx.author.mention} すでにゲームが進行中です。`!end_hb`で終了できます。")
             return
@@ -39,7 +40,7 @@ class HitAndBlow(commands.Cog):
         code = self.generate_code()
         self.games[ctx.author.id] = {"code": code, "attempts": 0}
         await ctx.reply(f"Hit and Blowを開始します！4桁の数字を予想して入力してください。")
-        print(f"（デバッグ用：{ctx.author.name}の生成された数字は {code} です）") 
+        #print(f"（デバッグ用：{ctx.author.name}の生成された数字は {code} です）") 
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -69,6 +70,7 @@ class HitAndBlow(commands.Cog):
 
     @commands.command(name="end_hb")
     async def end_game(self, ctx):
+        """Hit & Blowを終了します"""
         if ctx.author.id in self.games:
             correct_code = ''.join(map(str, self.games[ctx.author.id]["code"]))
             del self.games[ctx.author.id]
