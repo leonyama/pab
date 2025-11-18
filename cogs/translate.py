@@ -26,7 +26,7 @@ class TranslateCommands(commands.Cog):
                 title="テキスト翻訳",
                 color=discord.Color.green()
             )
-            embed.add_field(name=f"Result ({target_lang} へ)", value=f"```\n{translated}\n```", inline=False)
+            embed.add_field(name=f"To {target_lang}", value=f"```\n{translated}\n```", inline=False)
             await ctx.send(embed=embed)
         except Exception as e:
             await ctx.send(f"翻訳中にエラーが発生しました: {e}")
@@ -65,7 +65,7 @@ class TranslateCommands(commands.Cog):
                 title="Translate",
                 color=discord.Color.green()
             )
-            embed.add_field(name=f"Result (to {target_lang})", value=f"```\n{translated}\n```", inline=False)
+            embed.add_field(name=f"To {target_lang}", value=f"```\n{translated}\n```", inline=False)
             await interaction.followup.send(embed=embed)
         except Exception as e:
             await interaction.followup.send(f"翻訳中にエラーが発生しました: {e}", ephemeral=True)
