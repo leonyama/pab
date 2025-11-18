@@ -51,7 +51,7 @@ class TranslateCommands(commands.Cog):
         text="翻訳したいテキスト"
     )
     async def translate_slash(self, interaction: discord.Interaction, target_lang: str, text: str):
-        await interaction.response.defer(thinking=True)
+        await interaction.response.defer(thinking=False)
         target_lang = target_lang.lower()
         if target_lang not in LANGUAGES:
             await interaction.followup.send(
