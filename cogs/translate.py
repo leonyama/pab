@@ -4,7 +4,7 @@ from discord import app_commands
 from deep_translator import GoogleTranslator
 
 translator = GoogleTranslator()
-LANGUAGE_NAME2CODE = translator.get_supported_languages(as_dict=True) 
+LANGUAGE_NAME2CODE = translator.get_supported_languages(as_dict=True)
 LANGUAGE_CODES = set(LANGUAGE_NAME2CODE.values())
 LANGUAGES = list(LANGUAGE_NAME2CODE.keys())
 
@@ -15,6 +15,32 @@ def normalize_lang(target_lang):
     if lower in LANGUAGE_NAME2CODE:
         return LANGUAGE_NAME2CODE[lower]
     return None
+
+def split_text(text, max_length=2000):
+    import re
+    sentences = re.split(r'(?<=[。.!?])|\n', text)
+    chunks = []
+    current = ""
+    for sent in sentences:
+        if len(current) + len(sent) > max_length and current:
+            chunks.append(current)
+            current = sent
+        else:
+            current += sent
+    if current:
+        chunks.append(current)
+    return chunks
+
+async def safe_translate(text, target_lang_code, source_lang="auto"):
+    results = []
+    for chunk in split_text(text):
+        try:
+            translated = GoogleTranslator(source=source_lang, target=target_lang_code).translate(chunk)
+        except Exception as e:
+            translated = f"[ERROR] {str(e)} : {chunk}"
+        results.append(translated)
+    return ''.join(results)
+
 
 class TranslateCommands(commands.Cog):
     def __init__(self, bot):
@@ -33,12 +59,12 @@ class TranslateCommands(commands.Cog):
 
         status_msg = await ctx.send("翻訳中...")
         try:
-            translated = GoogleTranslator(source="auto", target=target_lang_code).translate(text)
+            translated = await safe_translate(text, target_lang_code)
             if translated.strip() == text.strip():
                 await status_msg.edit(content=f"翻訳に失敗した可能性があります。（原文: {text[:40]} ...）")
             else:
                 embed = discord.Embed(
-                    title="Trasnlate",
+                    title="Translate",
                     color=discord.Color.green()
                 )
                 embed.add_field(name=f"To {target_lang}", value=f"```\n{translated}\n```", inline=False)
@@ -79,7 +105,7 @@ class TranslateCommands(commands.Cog):
             return
 
         try:
-            translated = GoogleTranslator(source="auto", target=target_lang_code).translate(text)
+            translated = await safe_translate(text, target_lang_code)
             if translated.strip() == text.strip():
                 await interaction.followup.send(
                     f"翻訳に失敗した可能性があります。（原文: {text[:40]} ...）",
