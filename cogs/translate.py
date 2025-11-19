@@ -3,8 +3,17 @@ from discord.ext import commands
 from discord import app_commands
 from deep_translator import GoogleTranslator
 
-translator = GoogleTranslator()
-LANGUAGES = translator.get_supported_languages()  
+LANGUAGE_NAME2CODE = GoogleTranslator.get_supported_languages(as_dict=True)  
+LANGUAGE_CODES = set(LANGUAGE_NAME2CODE.values())
+LANGUAGES = list(LANGUAGE_NAME2CODE.keys())  
+
+def normalize_lang(target_lang):
+    lower = target_lang.strip().lower()
+    if lower in LANGUAGE_CODES:
+        return lower
+    if lower in LANGUAGE_NAME2CODE:
+        return LANGUAGE_NAME2CODE[lower]
+    return None
 
 class TranslateCommands(commands.Cog):
     def __init__(self, bot):
@@ -12,77 +21,92 @@ class TranslateCommands(commands.Cog):
 
     @commands.command(name="translate", aliases=['tr'])
     async def translate_command(self, ctx, target_lang, *, text):
-        target_lang = target_lang.lower()
-        if target_lang not in LANGUAGES:
+        target_lang_code = normalize_lang(target_lang)
+        if not target_lang_code:
             await ctx.send(
-                f"無効なターゲット言語名 `{target_lang}` です。\n利用可能な言語名は `!tr_langs` で確認してください。"
+                f"無効なターゲット言語 `{target_lang}` です。\n"
+                "利用可能な言語名は `!tr_langs` で確認してください。\n"
+                "またはコードが不明な場合は `!tr_langs` をご覧ください。"
             )
             return
 
-        status_msg = await ctx.send("翻訳中...")  # 進捗メッセージを一時送信
+        status_msg = await ctx.send("翻訳中...")
         try:
-            translated = GoogleTranslator(source="auto", target=target_lang).translate(text)
-            embed = discord.Embed(
-                title="テキスト翻訳",
-                color=discord.Color.green()
-            )
-            embed.add_field(name=f"To {target_lang}", value=f"```\n{translated}\n```", inline=False)
-            await status_msg.edit(content=None, embed=embed)  
+            translated = GoogleTranslator(source="auto", target=target_lang_code).translate(text)
+            if translated.strip() == text.strip():
+                await status_msg.edit(content=f"翻訳に失敗した可能性があります。（原文: {text[:40]} ...）")
+            else:
+                embed = discord.Embed(
+                    title="Trasnlate",
+                    color=discord.Color.green()
+                )
+                embed.add_field(name=f"To {target_lang} ({target_lang_code})", value=f"```\n{translated}\n```", inline=False)
+                await status_msg.edit(content=None, embed=embed)
         except Exception as e:
             await status_msg.edit(content=f"翻訳中にエラーが発生しました: {e}")
 
     @commands.command(name="tr_langs", aliases=['trl'])
     async def list_languages(self, ctx):
-        half = len(LANGUAGES) // 2
-        col1 = "\n".join([f"`{lang}`" for lang in LANGUAGES[:half]])
-        col2 = "\n".join([f"`{lang}`" for lang in LANGUAGES[half:]])
+        half = len(LANGUAGE_NAME2CODE) // 2
+        items = list(LANGUAGE_NAME2CODE.items())
+        col1 = "\n".join([f"`{name}` : `{code}`" for name, code in items[:half]])
+        col2 = "\n".join([f"`{name}` : `{code}`" for name, code in items[half:]])
         embed = discord.Embed(
-            title="利用可能な翻訳言語名",
-            description="コマンドで使う際は、下記の **言語名** をそのまま入力してください。（例: japanese, english など）",
+            title="利用可能な翻訳言語名・コード一覧",
+            description="コマンドで使う際は **言語名かコード** のどちらかを入力してください。（例: japanese / ja, english / en など）",
             color=discord.Color.blue()
         )
-        embed.add_field(name="言語名", value=col1, inline=True)
-        embed.add_field(name="言語名", value=col2, inline=True)
+        embed.add_field(name="言語", value=col1, inline=True)
+        embed.add_field(name="言語", value=col2, inline=True)
         await ctx.send(embed=embed)
 
     @app_commands.command(name="translate", description="テキストを指定された言語に翻訳します")
     @app_commands.describe(
-        target_lang="翻訳先の言語名 (例: japanese, english, chinese (simplified) など)",
+        target_lang="翻訳先の言語名またはコード (例: japanese, ja, english, en, chinese (simplified) など)",
         text="翻訳したいテキスト"
     )
     async def translate_slash(self, interaction: discord.Interaction, target_lang: str, text: str):
-        await interaction.response.defer(thinking=True) 
-        target_lang = target_lang.lower()
-        if target_lang not in LANGUAGES:
+        await interaction.response.defer(thinking=True)
+        target_lang_code = normalize_lang(target_lang)
+        if not target_lang_code:
             await interaction.followup.send(
-                f"無効なターゲット言語名 `{target_lang}` です。\n利用可能な言語名は `/tr_langs` で確認してください。",
+                f"無効なターゲット言語 `{target_lang}` です。\n"
+                "利用可能な言語名およびコードは `/tr_langs` で確認してください。\n"
+                "またはコードが不明な場合は `/tr_langs` をどうぞ。",
                 ephemeral=True
             )
             return
 
         try:
-            translated = GoogleTranslator(source="auto", target=target_lang).translate(text)
-            embed = discord.Embed(
-                title="Translate",
-                color=discord.Color.green()
-            )
-            embed.add_field(name=f"To {target_lang}", value=f"```\n{translated}\n```", inline=False)
-            await interaction.followup.send(embed=embed)
+            translated = GoogleTranslator(source="auto", target=target_lang_code).translate(text)
+            if translated.strip() == text.strip():
+                await interaction.followup.send(
+                    f"翻訳に失敗した可能性があります。（原文: {text[:40]} ...）",
+                    ephemeral=True
+                )
+            else:
+                embed = discord.Embed(
+                    title="Translate",
+                    color=discord.Color.green()
+                )
+                embed.add_field(name=f"To {target_lang} ({target_lang_code})", value=f"```\n{translated}\n```", inline=False)
+                await interaction.followup.send(embed=embed)
         except Exception as e:
             await interaction.followup.send(f"翻訳中にエラーが発生しました: {e}", ephemeral=True)
 
-    @app_commands.command(name="tr_langs", description="翻訳に利用可能な言語名リストを表示します")
+    @app_commands.command(name="tr_langs", description="翻訳に利用可能な言語名およびコード一覧を表示します")
     async def list_languages_slash(self, interaction: discord.Interaction):
-        half = len(LANGUAGES) // 2
-        col1 = "\n".join([f"`{lang}`" for lang in LANGUAGES[:half]])
-        col2 = "\n".join([f"`{lang}`" for lang in LANGUAGES[half:]])
+        half = len(LANGUAGE_NAME2CODE) // 2
+        items = list(LANGUAGE_NAME2CODE.items())
+        col1 = "\n".join([f"`{name}` : `{code}`" for name, code in items[:half]])
+        col2 = "\n".join([f"`{name}` : `{code}`" for name, code in items[half:]])
         embed = discord.Embed(
-            title="利用可能な翻訳言語名",
-            description="コマンドで使用する際は、下記の **言語名** を入力してください。",
+            title="利用可能な翻訳言語名・コード一覧",
+            description="コマンドで使う際は **言語名かコード** のどちらかを入力してください。（例: japanese / ja, english / en など）",
             color=discord.Color.blue()
         )
-        embed.add_field(name="言語名", value=col1, inline=True)
-        embed.add_field(name="言語名", value=col2, inline=True)
+        embed.add_field(name="言語", value=col1, inline=True)
+        embed.add_field(name="言語", value=col2, inline=True)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 async def setup(bot):
