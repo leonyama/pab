@@ -3,9 +3,10 @@ from discord.ext import commands
 from discord import app_commands
 from deep_translator import GoogleTranslator
 
-LANGUAGE_NAME2CODE = GoogleTranslator.get_supported_languages(as_dict=True)  
+translator = GoogleTranslator()
+LANGUAGE_NAME2CODE = translator.get_supported_languages(as_dict=True) 
 LANGUAGE_CODES = set(LANGUAGE_NAME2CODE.values())
-LANGUAGES = list(LANGUAGE_NAME2CODE.keys())  
+LANGUAGES = list(LANGUAGE_NAME2CODE.keys())
 
 def normalize_lang(target_lang):
     lower = target_lang.strip().lower()
