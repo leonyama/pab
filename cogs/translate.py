@@ -3,9 +3,8 @@ from discord.ext import commands
 from discord import app_commands
 from deep_translator import GoogleTranslator
 
-# インスタンスを作って言語リスト（英語名）を取得
 translator = GoogleTranslator()
-LANGUAGES = translator.get_supported_languages()  # ['afrikaans', 'albanian', ... ,'japanese', 'english']
+LANGUAGES = translator.get_supported_languages()  
 
 class TranslateCommands(commands.Cog):
     def __init__(self, bot):
@@ -19,7 +18,8 @@ class TranslateCommands(commands.Cog):
                 f"無効なターゲット言語名 `{target_lang}` です。\n利用可能な言語名は `!tr_langs` で確認してください。"
             )
             return
-        await ctx.send("翻訳中...")
+
+        status_msg = await ctx.send("翻訳中...")  # 進捗メッセージを一時送信
         try:
             translated = GoogleTranslator(source="auto", target=target_lang).translate(text)
             embed = discord.Embed(
@@ -27,9 +27,9 @@ class TranslateCommands(commands.Cog):
                 color=discord.Color.green()
             )
             embed.add_field(name=f"To {target_lang}", value=f"```\n{translated}\n```", inline=False)
-            await ctx.send(embed=embed)
+            await status_msg.edit(content=None, embed=embed)  
         except Exception as e:
-            await ctx.send(f"翻訳中にエラーが発生しました: {e}")
+            await status_msg.edit(content=f"翻訳中にエラーが発生しました: {e}")
 
     @commands.command(name="tr_langs", aliases=['trl'])
     async def list_languages(self, ctx):
@@ -51,7 +51,7 @@ class TranslateCommands(commands.Cog):
         text="翻訳したいテキスト"
     )
     async def translate_slash(self, interaction: discord.Interaction, target_lang: str, text: str):
-        await interaction.response.defer(thinking=False)
+        await interaction.response.defer(thinking=True) 
         target_lang = target_lang.lower()
         if target_lang not in LANGUAGES:
             await interaction.followup.send(
@@ -59,6 +59,7 @@ class TranslateCommands(commands.Cog):
                 ephemeral=True
             )
             return
+
         try:
             translated = GoogleTranslator(source="auto", target=target_lang).translate(text)
             embed = discord.Embed(
